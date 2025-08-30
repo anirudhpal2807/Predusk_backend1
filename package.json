@@ -6,8 +6,8 @@
   "scripts": {
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
-    "build": "echo 'No build step required for Node.js'",
-    "vercel-build": "echo 'No build step required for Node.js'",
+    "build": "echo 'Build completed'",
+    "vercel-build": "echo 'Vercel build completed'",
     "test": "jest",
     "seed": "node src/utils/seedData.js"
   },
