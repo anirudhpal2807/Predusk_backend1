@@ -5,34 +5,17 @@ const fs = require('fs');
 const envPath = path.join(__dirname, '..', '.env');
 
 // Load .env file if it exists (for local development)
-if (fs.existsSync(envPath)) {
+if (fs.existsSync(envPath) && process.env.NODE_ENV !== 'production') {
   console.log('[ENV] Loading .env file from:', envPath);
   require('dotenv').config({ path: envPath });
 } else {
-  console.log('[ENV] No .env file found, using environment variables');
+  console.log('[ENV] Using environment variables from Vercel/System');
 }
 
-// --- Forceful .env loading and debugging ---
-console.log(`[FORCE] Attempting to load .env file from: ${envPath}`);
-
-if (fs.existsSync(envPath)) {
-  console.log('[FORCE] .env file found. Reading contents...');
-  const envFileContent = fs.readFileSync(envPath, 'utf8');
-  console.log('--- .env file content ---');
-  console.log(envFileContent);
-  console.log('-------------------------');
-
-  // Load the .env file and override any existing environment variables
-  require('dotenv').config({ path: envPath, override: true });
-  console.log(`[FORCE] .env file loaded. process.env.PORT is now: ${process.env.PORT}`);
-} else {
-  console.error(`[FORCE] CRITICAL ERROR: .env file not found at ${envPath}.`);
-  // Don't exit in production, just log the error
-  if (process.env.NODE_ENV === 'development') {
-    process.exit(1);
-  }
-}
-// --- End of forceful loading ---
+// Log important environment variables
+console.log('[ENV] NODE_ENV:', process.env.NODE_ENV);
+console.log('[ENV] PORT:', process.env.PORT);
+console.log('[ENV] MONGODB_URI:', process.env.MONGODB_URI ? 'Set' : 'Not Set');
 
 const express = require('express');
 const mongoose = require('mongoose');
@@ -68,10 +51,22 @@ app.use(helmet());
 // app.use('/api/', limiter);
 
 // CORS configuration
-app.use(cors({
-  origin: true, // Allow all origins for testing
-  credentials: true
-}));
+const corsOptions = {
+  origin: process.env.NODE_ENV === 'production' 
+    ? [
+        'https://your-frontend-domain.vercel.app', // Replace with your actual frontend domain
+        'https://your-frontend-domain.com',        // If you have a custom domain
+        'http://localhost:3000',                   // For local development
+        'http://localhost:5173'                    // For Vite dev server
+      ]
+    : true, // Allow all origins in development
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Content-Type', 'Authorization']
+};
+
+app.use(cors(corsOptions));
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
