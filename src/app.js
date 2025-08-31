@@ -23,6 +23,7 @@ if (!process.env.MONGODB_URI) {
   console.error('❌ CRITICAL: MONGODB_URI environment variable is not set!');
   if (process.env.NODE_ENV === 'production') {
     console.error('❌ Cannot start production server without MONGODB_URI');
+    // Don't exit in production, just log the error
   }
 }
 
@@ -30,8 +31,18 @@ if (!process.env.JWT_SECRET) {
   console.error('❌ CRITICAL: JWT_SECRET environment variable is not set!');
   if (process.env.NODE_ENV === 'production') {
     console.error('❌ Cannot start production server without JWT_SECRET');
+    // Don't exit in production, just log the error
   }
 }
+
+// Log all environment variables for debugging
+console.log('🔍 All Environment Variables:', {
+  NODE_ENV: process.env.NODE_ENV,
+  PORT: process.env.PORT,
+  MONGODB_URI: process.env.MONGODB_URI ? 'SET' : 'NOT SET',
+  JWT_SECRET: process.env.JWT_SECRET ? 'SET' : 'NOT SET',
+  // Add any other environment variables you might have
+});
 
 const express = require('express');
 const mongoose = require('mongoose');

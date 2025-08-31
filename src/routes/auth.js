@@ -39,8 +39,26 @@ const loginSchema = Joi.object({
 
 // Generate JWT token
 const generateToken = (userId) => {
+  // Check for JWT_SECRET
   if (!process.env.JWT_SECRET) {
     console.error('❌ CRITICAL: JWT_SECRET environment variable is not set!');
+    console.error('🔍 Current environment variables:', {
+      NODE_ENV: process.env.NODE_ENV,
+      JWT_SECRET: process.env.JWT_SECRET ? 'SET' : 'NOT SET',
+      MONGODB_URI: process.env.MONGODB_URI ? 'SET' : 'NOT SET'
+    });
+    
+    // For development, use a fallback secret
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('⚠️ Using fallback JWT_SECRET for development');
+      const fallbackSecret = 'dev-secret-key-for-development-only';
+      return jwt.sign(
+        { userId },
+        fallbackSecret,
+        { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+      );
+    }
+    
     throw new Error('JWT_SECRET environment variable is not configured');
   }
   
@@ -62,6 +80,14 @@ router.post('/register', asyncHandler(async (req, res) => {
   console.log('🔍 Headers:', req.headers);
   console.log('🔍 Environment check - JWT_SECRET:', process.env.JWT_SECRET ? 'SET' : 'NOT SET');
   console.log('🔍 Environment check - MONGODB_URI:', process.env.MONGODB_URI ? 'SET' : 'NOT SET');
+  console.log('🔍 NODE_ENV:', process.env.NODE_ENV);
+  
+  // Check MongoDB connection
+  const mongoose = require('mongoose');
+  if (mongoose.connection.readyState !== 1) {
+    console.error('❌ MongoDB not connected. ReadyState:', mongoose.connection.readyState);
+    throw createError.internal('Database connection not available');
+  }
   
   try {
     // Validate request body
