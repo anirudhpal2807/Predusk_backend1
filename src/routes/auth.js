@@ -39,6 +39,11 @@ const loginSchema = Joi.object({
 
 // Generate JWT token
 const generateToken = (userId) => {
+  if (!process.env.JWT_SECRET) {
+    console.error('❌ CRITICAL: JWT_SECRET environment variable is not set!');
+    throw new Error('JWT_SECRET environment variable is not configured');
+  }
+  
   return jwt.sign(
     { userId },
     process.env.JWT_SECRET,

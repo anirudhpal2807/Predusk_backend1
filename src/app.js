@@ -16,6 +16,22 @@ if (fs.existsSync(envPath) && process.env.NODE_ENV !== 'production') {
 console.log('[ENV] NODE_ENV:', process.env.NODE_ENV);
 console.log('[ENV] PORT:', process.env.PORT);
 console.log('[ENV] MONGODB_URI:', process.env.MONGODB_URI ? 'Set' : 'Not Set');
+console.log('[ENV] JWT_SECRET:', process.env.JWT_SECRET ? 'Set' : 'Not Set');
+
+// Check critical environment variables
+if (!process.env.MONGODB_URI) {
+  console.error('❌ CRITICAL: MONGODB_URI environment variable is not set!');
+  if (process.env.NODE_ENV === 'production') {
+    console.error('❌ Cannot start production server without MONGODB_URI');
+  }
+}
+
+if (!process.env.JWT_SECRET) {
+  console.error('❌ CRITICAL: JWT_SECRET environment variable is not set!');
+  if (process.env.NODE_ENV === 'production') {
+    console.error('❌ Cannot start production server without JWT_SECRET');
+  }
+}
 
 const express = require('express');
 const mongoose = require('mongoose');
