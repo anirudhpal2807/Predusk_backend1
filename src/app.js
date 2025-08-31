@@ -69,7 +69,7 @@ app.use(helmet());
 
 // CORS configuration
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || ['http://localhost:3000', 'http://localhost:5173', 'https://your-frontend-domain.vercel.app'],
+  origin: true, // Allow all origins for testing
   credentials: true
 }));
 
