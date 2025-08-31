@@ -11,6 +11,13 @@ const router = express.Router();
  * @access  Public
  */
 router.get('/', optionalAuth, asyncHandler(async (req, res) => {
+  // Check MongoDB connection status
+  const mongoose = require('mongoose');
+  if (mongoose.connection.readyState !== 1) {
+    console.error('❌ MongoDB not connected. ReadyState:', mongoose.connection.readyState);
+    throw createError.internal('Database connection not available');
+  }
+  
   const { skill, search, limit = 20, page = 1 } = req.query;
   
   // Build query for public profiles with projects

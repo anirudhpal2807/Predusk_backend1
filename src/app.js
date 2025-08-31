@@ -107,6 +107,27 @@ if (process.env.NODE_ENV === 'development') {
 // Health check route (before API routes)
 app.use('/health', healthRoutes);
 
+// MongoDB connection health check
+app.get('/db-health', (req, res) => {
+  const dbState = mongoose.connection.readyState;
+  const states = {
+    0: 'disconnected',
+    1: 'connected',
+    2: 'connecting',
+    3: 'disconnecting'
+  };
+  
+  res.json({
+    success: true,
+    database: {
+      status: states[dbState] || 'unknown',
+      readyState: dbState,
+      name: mongoose.connection.name,
+      host: mongoose.connection.host
+    }
+  });
+});
+
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
@@ -134,20 +155,28 @@ app.get('/', (req, res) => {
 // Error handling middleware
 app.use(errorHandler);
 
-// MongoDB connection
+// MongoDB connection with Vercel-optimized settings
 mongoose.connect(process.env.MONGODB_URI, {
   retryWrites: true,
   w: 'majority',
-  maxPoolSize: 10,
-  serverSelectionTimeoutMS: 30000,
-  socketTimeoutMS: 45000,
-  connectTimeoutMS: 30000,
+  maxPoolSize: 1, // Reduced for serverless
+  minPoolSize: 0, // Allow connection pool to shrink
+  serverSelectionTimeoutMS: 5000, // Faster timeout for serverless
+  socketTimeoutMS: 10000, // Reduced timeout
+  connectTimeoutMS: 10000, // Reduced timeout
+  bufferCommands: false, // Disable buffering for serverless
+  bufferMaxEntries: 0, // Disable buffering
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
 })
 .then(() => {
   console.log('✅ Connected to MongoDB successfully!');
   console.log('✅ Database:', mongoose.connection.name);
   console.log('✅ Host:', mongoose.connection.host);
   console.log('✅ Port:', mongoose.connection.port);
+  
+  // Set connection state
+  mongoose.connection.readyState = 1; // Connected
   
   // Start server after successful database connection
   if (process.env.NODE_ENV !== 'production') {
