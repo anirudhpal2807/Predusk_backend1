@@ -54,10 +54,10 @@ app.use(helmet());
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production' 
     ? [
-        'https://your-frontend-domain.vercel.app', // Replace with your actual frontend domain
-        'https://your-frontend-domain.com',        // If you have a custom domain
-        'http://localhost:3000',                   // For local development
-        'http://localhost:5173'                    // For Vite dev server
+        'https://predusk-frontend1-qwra.vercel.app', // Your actual frontend domain
+        'https://predusk-frontend1.vercel.app',      // Alternative domain
+        'http://localhost:3000',                     // For local development
+        'http://localhost:5173'                      // For Vite dev server
       ]
     : true, // Allow all origins in development
   credentials: true,
@@ -67,6 +67,9 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+
+// Handle preflight requests
+app.options('*', cors(corsOptions));
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
