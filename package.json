@@ -1,6 +1,12 @@
 {
   "name": "predusk-backend",
-  "version": "1.0.2",
+
+
+
+
+
+
+  "version": "1.0.3",
   "description": "Backend API for Predusk portfolio platform",
   "main": "src/app.js",
   "scripts": {

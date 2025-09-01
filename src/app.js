@@ -166,24 +166,39 @@ app.get('/', (req, res) => {
 // Error handling middleware
 app.use(errorHandler);
 
-// MongoDB connection with Render-optimized settings
+// MongoDB connection with serverless optimization
 const connectWithRetry = () => {
   console.log('🔄 Attempting to connect to MongoDB...');
   
+  // For Vercel serverless, use connection caching
+  if (process.env.VERCEL === '1') {
+    console.log('🚀 Vercel serverless environment detected');
+    // Use cached connection if available
+    if (mongoose.connection.readyState === 1) {
+      console.log('✅ Using existing MongoDB connection');
+      return Promise.resolve();
+    }
+  }
+  
   // Check if we have a direct connection string or need to use Data API
   if (process.env.MONGODB_URI && process.env.MONGODB_URI.includes('mongodb+srv://')) {
-    // Direct MongoDB connection
+    // Direct MongoDB connection with serverless optimization
     mongoose.connect(process.env.MONGODB_URI, {
       retryWrites: true,
       w: 'majority',
-      maxPoolSize: 10, // Standard for Render
-      minPoolSize: 2, // Keep some connections alive
-      serverSelectionTimeoutMS: 30000, // Standard timeout
-      socketTimeoutMS: 45000, // Standard timeout
-      connectTimeoutMS: 30000, // Standard timeout
-      // Standard options for Render
+      maxPoolSize: 1, // Reduced for serverless
+      minPoolSize: 0, // Start with 0 for serverless
+      serverSelectionTimeoutMS: 10000, // Reduced timeout for serverless
+      socketTimeoutMS: 20000, // Reduced timeout for serverless
+      connectTimeoutMS: 10000, // Reduced timeout for serverless
+      // Serverless-optimized options
       useNewUrlParser: true,
       useUnifiedTopology: true,
+      // Connection pooling for serverless
+      maxIdleTimeMS: 30000, // Close connections after 30s of inactivity
+      // Retry logic
+      retryReads: true,
+      retryWrites: true,
     })
     .then(() => {
       console.log('✅ Connected to MongoDB successfully!');
