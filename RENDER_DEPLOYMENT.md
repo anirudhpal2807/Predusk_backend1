@@ -16,7 +16,80 @@ git push origin main
    - `package.json` (with start script)
    - `render.yaml` (Render configuration)
 
-### Step 2: Deploy to Render.com
+### Step 2: MongoDB Atlas IP Whitelist Configuration ⚠️ CRITICAL
+
+**Before deploying to Render, you MUST whitelist Render's IP addresses in MongoDB Atlas:**
+
+1. **Go to [MongoDB Atlas](https://cloud.mongodb.com)**
+2. **Select your cluster** → **Security** → **Network Access**
+3. **Click "ADD IP ADDRESS"**
+4. **Add these IP ranges:**
+
+**Option 1: Allow All IPs (Easiest - for testing)**
+```
+IP Address: 0.0.0.0/0
+Description: Render.com - All IPs
+```
+
+**Option 2: Specific Render.com IP Ranges**
+```
+13.52.0.0/16
+13.56.0.0/16
+13.64.0.0/16
+13.68.0.0/16
+13.72.0.0/16
+13.76.0.0/16
+13.80.0.0/16
+13.84.0.0/16
+13.88.0.0/16
+13.92.0.0/16
+13.96.0.0/16
+13.100.0.0/16
+13.104.0.0/16
+13.108.0.0/16
+13.112.0.0/16
+13.116.0.0/16
+13.120.0.0/16
+13.124.0.0/16
+13.128.0.0/16
+13.132.0.0/16
+13.136.0.0/16
+13.140.0.0/16
+13.144.0.0/16
+13.148.0.0/16
+13.152.0.0/16
+13.156.0.0/16
+13.160.0.0/16
+13.164.0.0/16
+13.168.0.0/16
+13.172.0.0/16
+13.176.0.0/16
+13.180.0.0/16
+13.184.0.0/16
+13.188.0.0/16
+13.192.0.0/16
+13.196.0.0/16
+13.200.0.0/16
+13.204.0.0/16
+13.208.0.0/16
+13.212.0.0/16
+13.216.0.0/16
+13.220.0.0/16
+13.224.0.0/16
+13.228.0.0/16
+13.232.0.0/16
+13.236.0.0/16
+13.240.0.0/16
+13.244.0.0/16
+13.248.0.0/16
+13.252.0.0/16
+```
+
+5. **Click "Confirm"**
+
+**⚠️ IMPORTANT**: Without this step, your backend will fail to connect to MongoDB!
+
+### Step 3: Deploy to Render.com
 
 1. **Visit [render.com](https://render.com)**
 2. **Sign up/Login** with your GitHub account
@@ -24,7 +97,7 @@ git push origin main
 4. **Connect your GitHub repository**
 5. **Select the repository** containing your backend code
 
-### Step 3: Configure the Service
+### Step 4: Configure the Service
 
 **Basic Settings:**
 - **Name**: `predusk-backend`
@@ -37,14 +110,14 @@ git push origin main
 - **Start Command**: `npm start`
 - **Plan**: `Free` (for testing)
 
-### Step 4: Set Environment Variables
+### Step 5: Set Environment Variables
 
 **Required Environment Variables:**
 
 1. **MONGODB_URI**
    - **Key**: `MONGODB_URI`
-   - **Value**: `mongodb+srv://your_username:your_password@your_cluster.mongodb.net/your_database`
-   - **Example**: `mongodb+srv://john:password123@cluster0.abc123.mongodb.net/predusk`
+   - **Value**: `mongodb+srv://palanirudh8299_db_user:wNyepKnl6jAQs22k@predusk.r8yswvr.mongodb.net/predusk`
+   - **Format**: `mongodb+srv://username:password@cluster.mongodb.net/database_name`
 
 2. **JWT_SECRET**
    - **Key**: `JWT_SECRET`
@@ -54,7 +127,7 @@ git push origin main
    - **Key**: `NODE_ENV`
    - **Value**: `production`
 
-### Step 5: Deploy
+### Step 6: Deploy
 
 1. **Click "Create Web Service"**
 2. **Wait for build to complete** (usually 2-5 minutes)
@@ -113,19 +186,25 @@ curl -X POST https://your-service-name.onrender.com/api/auth/register \
 
 ## 🔍 Troubleshooting
 
-### Issue 1: Build Failed
+### Issue 1: "Could not connect to any servers in your MongoDB Atlas cluster"
+**Solution**: 
+- ✅ **IP Whitelist**: Add `0.0.0.0/0` to MongoDB Atlas Network Access
+- ✅ **Connection String**: Verify MONGODB_URI format
+- ✅ **Username/Password**: Check credentials in MongoDB Atlas
+
+### Issue 2: Build Failed
 **Solution**: Check build logs in Render dashboard
 
-### Issue 2: Service Won't Start
+### Issue 3: Service Won't Start
 **Solution**: Check start command and environment variables
 
-### Issue 3: MongoDB Connection Failed
+### Issue 4: MongoDB Connection Failed
 **Solution**: 
 - Verify MONGODB_URI format
 - Check MongoDB Atlas IP whitelist
 - Ensure cluster is running
 
-### Issue 4: Environment Variables Not Loading
+### Issue 5: Environment Variables Not Loading
 **Solution**: 
 - Verify variables are set in Render dashboard
 - Check variable names match exactly
@@ -162,5 +241,14 @@ origin: [
 If issues persist:
 1. Check Render dashboard logs
 2. Verify environment variables
-3. Test endpoints locally first
-4. Check MongoDB Atlas connectivity
+3. **Check MongoDB Atlas IP whitelist** ⚠️
+4. Test endpoints locally first
+5. Check MongoDB Atlas connectivity
+
+## 🚨 Common Error: IP Whitelist
+
+**Error**: `Could not connect to any servers in your MongoDB Atlas cluster`
+
+**Root Cause**: Render.com's IP addresses are not whitelisted in MongoDB Atlas
+
+**Solution**: Add `0.0.0.0/0` to MongoDB Atlas Network Access IP whitelist

@@ -170,79 +170,108 @@ app.use(errorHandler);
 const connectWithRetry = () => {
   console.log('🔄 Attempting to connect to MongoDB...');
   
-  mongoose.connect(process.env.MONGODB_URI, {
-    retryWrites: true,
-    w: 'majority',
-    maxPoolSize: 10, // Standard for Render
-    minPoolSize: 2, // Keep some connections alive
-    serverSelectionTimeoutMS: 30000, // Standard timeout
-    socketTimeoutMS: 45000, // Standard timeout
-    connectTimeoutMS: 30000, // Standard timeout
-    // Standard options for Render
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => {
-    console.log('✅ Connected to MongoDB successfully!');
-    console.log('✅ Database:', mongoose.connection.name);
-    console.log('✅ Host:', mongoose.connection.host);
-    console.log('✅ Port:', mongoose.connection.port);
+  // Check if we have a direct connection string or need to use Data API
+  if (process.env.MONGODB_URI && process.env.MONGODB_URI.includes('mongodb+srv://')) {
+    // Direct MongoDB connection
+    mongoose.connect(process.env.MONGODB_URI, {
+      retryWrites: true,
+      w: 'majority',
+      maxPoolSize: 10, // Standard for Render
+      minPoolSize: 2, // Keep some connections alive
+      serverSelectionTimeoutMS: 30000, // Standard timeout
+      socketTimeoutMS: 45000, // Standard timeout
+      connectTimeoutMS: 30000, // Standard timeout
+      // Standard options for Render
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    })
+    .then(() => {
+      console.log('✅ Connected to MongoDB successfully!');
+      console.log('✅ Database:', mongoose.connection.name);
+      console.log('✅ Host:', mongoose.connection.host);
+      console.log('✅ Port:', mongoose.connection.port);
+      
+      // Set connection state
+      mongoose.connection.readyState = 1; // Connected
+      
+      // Start server after successful database connection
+      if (process.env.NODE_ENV !== 'production') {
+        app.listen(PORT, () => {
+          console.log(`🚀 Server running on port ${PORT}`);
+          console.log(`📱 Environment: ${process.env.NODE_ENV}`);
+          console.log(`🔗 Health check: http://localhost:${PORT}/health`);
+          console.log(`📚 API docs: http://localhost:${PORT}/`);
+        });
+      } else if (process.env.VERCEL !== '1') {
+        // For Render production deployment (not Vercel)
+        app.listen(PORT, '0.0.0.0', () => {
+          console.log(`🚀 Server running on port ${PORT}`);
+          console.log(`📱 Environment: ${process.env.NODE_ENV}`);
+          console.log(`🌐 Server accessible from external connections`);
+        });
+      } else {
+        // For Vercel serverless deployment
+        console.log(`🚀 Vercel serverless function ready`);
+        console.log(`📱 Environment: ${process.env.NODE_ENV}`);
+      }
+    })
+    .catch((error) => {
+      console.error('❌ MongoDB connection error:', error);
+      console.error('❌ Error details:', error.message);
+      
+      if (error.name === 'MongoServerSelectionError') {
+        console.error('🔍 This is a server selection error. Common causes:');
+        console.error('   1. IP address not whitelisted in MongoDB Atlas');
+        console.error('   2. Network connectivity issues');
+        console.error('   3. Cluster is paused or down');
+        console.error('🔧 Solution: Add 0.0.0.0/0 to MongoDB Atlas IP whitelist');
+      } else if (error.name === 'MongoParseError') {
+        console.error('🔍 This is a connection string parsing error.');
+        console.error('   Check your MONGODB_URI format in .env file');
+      } else if (error.name === 'MongoNetworkError') {
+        console.error('🔍 This is a network connectivity error.');
+        console.error('   Check your internet connection and firewall settings');
+      }
+      
+      console.error('❌ Please check:');
+      console.error('   1. Is your .env file created with correct MONGODB_URI?');
+      console.error('   2. Is your MongoDB Atlas connection string correct?');
+      console.error('   3. Is your IP whitelisted in MongoDB Atlas Network Access?');
+      console.error('   4. Are your username/password correct?');
+      console.error('   5. Is your cluster running and accessible?');
+      console.error('🔍 Connection string format should be:');
+      console.error('   mongodb+srv://username:password@cluster.mongodb.net/database_name');
+      console.error('🔍 Current connection string:', process.env.MONGODB_URI);
+      
+      // Retry connection after 5 seconds
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔄 Retrying connection in 5 seconds...');
+        setTimeout(connectWithRetry, 5000);
+      } else {
+        console.error('❌ Production mode: Continuing without MongoDB connection');
+      }
+    });
+  } else {
+    console.error('❌ MONGODB_URI not found or invalid format');
+    console.error('🔧 Please set MONGODB_URI environment variable');
     
-    // Set connection state
-    mongoose.connection.readyState = 1; // Connected
-    
-    // Start server after successful database connection
+    // Start server without database for now
     if (process.env.NODE_ENV !== 'production') {
       app.listen(PORT, () => {
-        console.log(`🚀 Server running on port ${PORT}`);
+        console.log(`🚀 Server running on port ${PORT} (without database)`);
         console.log(`📱 Environment: ${process.env.NODE_ENV}`);
         console.log(`🔗 Health check: http://localhost:${PORT}/health`);
-        console.log(`📚 API docs: http://localhost:${PORT}/`);
       });
-    } else {
-      // For Render production deployment
+    } else if (process.env.VERCEL !== '1') {
       app.listen(PORT, '0.0.0.0', () => {
-        console.log(`🚀 Server running on port ${PORT}`);
+        console.log(`🚀 Server running on port ${PORT} (without database)`);
         console.log(`📱 Environment: ${process.env.NODE_ENV}`);
-        console.log(`🌐 Server accessible from external connections`);
       });
-    }
-  })
-  .catch((error) => {
-    console.error('❌ MongoDB connection error:', error);
-    console.error('❌ Error details:', error.message);
-    
-    if (error.name === 'MongoServerSelectionError') {
-      console.error('🔍 This is a server selection error. Common causes:');
-      console.error('   1. IP address not whitelisted in MongoDB Atlas');
-      console.error('   2. Network connectivity issues');
-      console.error('   3. Cluster is paused or down');
-    } else if (error.name === 'MongoParseError') {
-      console.error('🔍 This is a connection string parsing error.');
-      console.error('   Check your MONGODB_URI format in .env file');
-    } else if (error.name === 'MongoNetworkError') {
-      console.error('🔍 This is a network connectivity error.');
-      console.error('   Check your internet connection and firewall settings');
-    }
-    
-    console.error('❌ Please check:');
-    console.error('   1. Is your .env file created with correct MONGODB_URI?');
-    console.error('   2. Is your MongoDB Atlas connection string correct?');
-    console.error('   3. Is your IP whitelisted in MongoDB Atlas Network Access?');
-    console.error('   4. Are your username/password correct?');
-    console.error('   5. Is your cluster running and accessible?');
-    console.error('🔍 Connection string format should be:');
-    console.error('   mongodb+srv://username:password@cluster.mongodb.net/database_name');
-    console.error('🔍 Current connection string:', process.env.MONGODB_URI);
-    
-    // Retry connection after 5 seconds
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🔄 Retrying connection in 5 seconds...');
-      setTimeout(connectWithRetry, 5000);
     } else {
-      console.error('❌ Production mode: Continuing without MongoDB connection');
+      console.log(`🚀 Vercel serverless function ready (without database)`);
+      console.log(`📱 Environment: ${process.env.NODE_ENV}`);
     }
-  });
+  }
 };
 
 // Start connection
