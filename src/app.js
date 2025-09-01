@@ -219,12 +219,7 @@ const connectWithRetry = () => {
       retryWrites: true,
       // Force connection close on timeout
       bufferCommands: false,
-      bufferMaxEntries: 0,
-      // Heartbeat settings
-      heartbeatFrequencyMS: 10000,
-      // Auto-reconnect settings
-      autoReconnect: false,
-      // Connection monitoring
+      // Connection monitoring (removed deprecated options)
       monitorCommands: true,
     });
     
