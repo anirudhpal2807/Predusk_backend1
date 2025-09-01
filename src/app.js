@@ -173,8 +173,25 @@ const connectWithRetry = () => {
   // For Vercel serverless, use connection caching
   if (process.env.VERCEL === '1') {
     console.log('🚀 Vercel serverless environment detected');
-    // Use cached connection if available
-    if (mongoose.connection.readyState === 1) {
+    
+    // Check connection state
+    const currentState = mongoose.connection.readyState;
+    console.log(`🔍 Current MongoDB connection state: ${currentState}`);
+    
+    // If stuck in connecting state (2), force reset
+    if (currentState === 2) {
+      console.log('⚠️ MongoDB stuck in connecting state, forcing reset...');
+      try {
+        mongoose.connection.close();
+        mongoose.connection.readyState = 0;
+        console.log('✅ Connection reset completed');
+      } catch (resetError) {
+        console.log('⚠️ Connection reset failed, continuing with new connection');
+      }
+    }
+    
+    // Use cached connection if available and healthy
+    if (currentState === 1) {
       console.log('✅ Using existing MongoDB connection');
       return Promise.resolve();
     }
@@ -182,24 +199,44 @@ const connectWithRetry = () => {
   
   // Check if we have a direct connection string or need to use Data API
   if (process.env.MONGODB_URI && process.env.MONGODB_URI.includes('mongodb+srv://')) {
-    // Direct MongoDB connection with serverless optimization
-    mongoose.connect(process.env.MONGODB_URI, {
+    
+    // Create connection promise with timeout
+    const connectionPromise = mongoose.connect(process.env.MONGODB_URI, {
       retryWrites: true,
       w: 'majority',
       maxPoolSize: 1, // Reduced for serverless
       minPoolSize: 0, // Start with 0 for serverless
-      serverSelectionTimeoutMS: 10000, // Reduced timeout for serverless
-      socketTimeoutMS: 20000, // Reduced timeout for serverless
-      connectTimeoutMS: 10000, // Reduced timeout for serverless
+      serverSelectionTimeoutMS: 5000, // Further reduced timeout
+      socketTimeoutMS: 10000, // Further reduced timeout
+      connectTimeoutMS: 5000, // Further reduced timeout
       // Serverless-optimized options
       useNewUrlParser: true,
       useUnifiedTopology: true,
       // Connection pooling for serverless
-      maxIdleTimeMS: 30000, // Close connections after 30s of inactivity
+      maxIdleTimeMS: 15000, // Close connections after 15s of inactivity
       // Retry logic
       retryReads: true,
       retryWrites: true,
-    })
+      // Force connection close on timeout
+      bufferCommands: false,
+      bufferMaxEntries: 0,
+      // Heartbeat settings
+      heartbeatFrequencyMS: 10000,
+      // Auto-reconnect settings
+      autoReconnect: false,
+      // Connection monitoring
+      monitorCommands: true,
+    });
+    
+    // Add timeout to connection promise
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => {
+        reject(new Error('MongoDB connection timeout after 8 seconds'));
+      }, 8000);
+    });
+    
+    // Race between connection and timeout
+    Promise.race([connectionPromise, timeoutPromise])
     .then(() => {
       console.log('✅ Connected to MongoDB successfully!');
       console.log('✅ Database:', mongoose.connection.name);

@@ -6,7 +6,7 @@
 
 
 
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Backend API for Predusk portfolio platform",
   "main": "src/app.js",
   "scripts": {
